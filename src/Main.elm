@@ -29,15 +29,16 @@ exampleGenerateRandomMines =
         }
         MinesGenerated
 
-viewCase : List Case -> Html Msg
-viewCase cases =
-    Html.button
-        []
-        []
+viewCase : Case -> Html Msg
+viewCase case_ =
+  Html.button
+    []
+    []
+
 
 init : ( Model, Cmd Msg )
 init =
-    ( {board = [[]], height = 100, width = 100}, Cmd.none )
+    ( {board = [[]], height = 100, width = 100}, exampleGenerateRandomMines )
 
 
 type Msg
@@ -52,11 +53,12 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div []
-        [ img [ src "/logo.svg" ] []
+        ([ img [ src "/logo.svg" ] []
         , h1 [] [ text "Your Elm App is working!" ]
         , text "Implémentez le démineur !"
-        , List.map viewCase model.board
-        ]
+        , div []
+          (List.foldl (\x a -> (List.map viewCase x) ++ a) [] model.board)
+        ])
 
 
 main : Program () Model Msg

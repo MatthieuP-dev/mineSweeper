@@ -14,6 +14,7 @@ type alias Model =
     board : List (List Case)
     , height : Int
     , width : Int
+    , mines : List Mine.Mine
     }
 
 
@@ -38,7 +39,7 @@ viewCase case_ =
 
 init : ( Model, Cmd Msg )
 init =
-    ( {board = [[]], height = 100, width = 100}, exampleGenerateRandomMines )
+    ( {board = [[]], height = 100, width = 100, mines = []}, exampleGenerateRandomMines )
 
 
 type Msg
@@ -47,7 +48,8 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+      MinesGenerated value -> ({model | mines = value}, Cmd.none)
 
 
 view : Model -> Html Msg

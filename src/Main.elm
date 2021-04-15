@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Html exposing (Html, div, h1, img, text)
-import Html.Attributes exposing (src)
+import Html.Attributes exposing (src,style,class)
 import Mine
 import Html.Events as Events
 
@@ -17,12 +17,16 @@ type alias Model =
     , mines : List Mine.Mine
     }
 
+generateBoard : List Mine.Mine -> List (List Case)
+generateBoard mineList =
+  List.repeat 20 (List.repeat 20 ({isMine = False, revealed = False}))
+
 
 exampleGenerateRandomMines : Cmd Msg
 exampleGenerateRandomMines =
     Mine.generateRandomMines
-        { width = 100
-        , height = 100
+        { width = 20
+        , height = 20
         , minMines = 10
         , maxMines = 30
         , initialX = 0
@@ -33,13 +37,13 @@ exampleGenerateRandomMines =
 viewCase : Case -> Html Msg
 viewCase case_ =
   Html.button
-    []
+    [style "width" "15px", style "height" "15px"]
     []
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( {board = [[]], height = 100, width = 100, mines = []}, exampleGenerateRandomMines )
+    ( {board = [[]], height = 20, width = 20, mines = []}, exampleGenerateRandomMines )
 
 
 type Msg
@@ -49,16 +53,15 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-      MinesGenerated value -> ({model | mines = value}, Cmd.none)
+      MinesGenerated value -> ({model | mines = value, board = generateBoard value}, Cmd.none)
 
 
 view : Model -> Html Msg
 view model =
     div []
-        ([ img [ src "/logo.svg" ] []
-        , h1 [] [ text "Your Elm App is working!" ]
-        , text "Implémentez le démineur !"
-        , div []
+        ([ h1 [] [ text "Démineur" ]
+        , text "Jouez !"
+        , div [class "myGrid"]
           (List.foldl (\x a -> (List.map viewCase x) ++ a) [] model.board)
         ])
 

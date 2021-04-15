@@ -5,6 +5,7 @@ import Html exposing (Html, div, h1, img, text)
 import Html.Attributes exposing (src,style,class)
 import Mine
 import Html.Events as Events
+import List.Extra
 
 type alias Case =
     { isMine : Bool, revealed : Bool }
@@ -19,7 +20,17 @@ type alias Model =
 
 generateBoard : List Mine.Mine -> List (List Case)
 generateBoard mineList =
-  List.repeat 20 (List.repeat 20 ({isMine = False, revealed = False}))
+  let
+    board = List.repeat 20 (List.repeat 20 ({isMine = False, revealed = False}))
+  in
+    List.foldl (helper) board mineList
+
+helper : (Int, Int) -> List (List Case) -> List (List Case)
+helper ( x, y ) caseList =
+      case List.Extra.getAt x caseList of
+      Nothing -> caseList
+      Just (cases) -> List.Extra.setAt x (List.Extra.updateAt y (\x_ -> {isMine = True, revealed = False}) cases) caseList
+
 
 
 exampleGenerateRandomMines : Cmd Msg

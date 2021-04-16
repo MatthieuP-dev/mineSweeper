@@ -25,10 +25,16 @@ img {
   max-width: 200px;
 }
 
+button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .myGrid {
   display: grid;
-  grid-template-columns: repeat(20,15px);
+  grid-template-columns: repeat(20,17px);
   grid-auto-rows: auto;
   margin-left: 35%;
-  margin-top: 20px;
+  margin-top: 15px;
 }

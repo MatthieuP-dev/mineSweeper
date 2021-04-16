@@ -8,7 +8,7 @@ import Html.Events as Events
 import List.Extra
 
 type alias Case =
-    { isMine : Bool, revealed : Bool }
+    { isMine : Bool, revealed : Bool, x : Int, y : Int }
 
 type alias Model =
     {
@@ -21,23 +21,38 @@ type alias Model =
 generateBoard : List Mine.Mine -> List (List Case)
 generateBoard mineList =
   let
-    board = List.repeat 20 (List.repeat 20 ({isMine = False, revealed = False}))
+    board = generateBoardHelper 19
   in
     List.foldl (helper) board mineList
 
+generateBoardHelper : Int -> List (List Case)
+generateBoardHelper int =
+  List.map (\a ->List.map (\b -> { isMine = False, revealed = False, x = a, y = b }) (List.range 0 int)) (List.range 0 int)
+
 helper : (Int, Int) -> List (List Case) -> List (List Case)
-helper ( x, y ) caseList =
-      case List.Extra.getAt x caseList of
-      Nothing -> caseList
-      Just (cases) -> List.Extra.setAt x (List.Extra.updateAt y (\x_ -> {isMine = True, revealed = False}) cases) caseList
+helper ( a, b ) caseList =
+      case List.Extra.getAt a caseList of
+        Nothing -> caseList
+        Just (cases) -> List.Extra.setAt a (List.Extra.updateAt b (\x_ -> {isMine = True, revealed = False, x = a, y = b}) cases) caseList
 
+revealCase : Case -> List (List Case) -> List (List Case)
+revealCase case_ caseList =
+    let
+      (a, b) = (case_.x , case_.y)
+    in
+      case List.Extra.getAt a caseList of
+        Nothing -> caseList
+        Just (cases) -> List.Extra.setAt a (List.Extra.updateAt b (\x_ -> {isMine = case_.isMine, revealed = True, x = a, y = b}) cases) caseList
 
+isRevealCase : Case -> Bool
+isRevealCase case_ =
+    case_.revealed
 
 exampleGenerateRandomMines : Cmd Msg
 exampleGenerateRandomMines =
     Mine.generateRandomMines
-        { width = 20
-        , height = 20
+        { width = 19
+        , height = 19
         , minMines = 10
         , maxMines = 30
         , initialX = 0
@@ -48,8 +63,15 @@ exampleGenerateRandomMines =
 viewCase : Case -> Html Msg
 viewCase case_ =
   Html.button
-    [style "width" "15px", style "height" "15px"]
-    []
+    [ Events.onClick(Reveal case_), style "width" "17px", style "height" "17px", style "background-color" "light-grey"]
+    [ if case_.revealed then
+        if case_.isMine then
+          text "💣"
+        else
+          text "1"
+      else
+        text ""
+    ]
 
 
 init : ( Model, Cmd Msg )
@@ -59,13 +81,15 @@ init =
 
 type Msg
     = MinesGenerated (List ( Int, Int ))
+    |Reveal Case
+
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
       MinesGenerated value -> ({model | mines = value, board = generateBoard value}, Cmd.none)
-
+      Reveal case_ -> let newBoard =  revealCase case_ model.board in ( {model | board = newBoard}, Cmd.none)
 
 view : Model -> Html Msg
 view model =

@@ -31,10 +31,18 @@ button {
   justify-content: center;
 }
 
+.myButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 5px
+}
+
 .myGrid {
   display: grid;
+  align-items: center;
+  justify-content: center;
   grid-template-columns: repeat(20,17px);
   grid-auto-rows: auto;
-  margin-left: 35%;
   margin-top: 15px;
 }

@@ -4,6 +4,7 @@ import Random exposing (Generator)
 import Set
 
 
+
 type alias Mine =
     ( Int, Int )
 
@@ -16,7 +17,6 @@ type alias Options =
     , initialX : Int
     , initialY : Int
     }
-
 
 randomMinesGeneratorList : Options -> Int -> Generator (List Mine)
 randomMinesGeneratorList { width, height } len =

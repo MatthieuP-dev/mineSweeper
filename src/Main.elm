@@ -7,6 +7,15 @@ import Mine
 import Html.Events as Events
 import List.Extra
 
+boardWidth : Int
+boardWidth = 16
+
+boardHeight : Int
+boardHeight = 16
+
+numberBombs : Int
+numberBombs = 40
+
 type alias Case =
     { isMine : Bool, revealed : Bool, flag : Bool, x : Int, y : Int }
 
@@ -23,13 +32,13 @@ type alias Model =
 generateBoard : List Mine.Mine -> List (List Case)
 generateBoard mineList =
   let
-    board = generateBoardHelper 19
+    board = generateBoardHelper boardWidth boardHeight
   in
     List.foldl (helper) board mineList
 
-generateBoardHelper : Int -> List (List Case)
-generateBoardHelper int =
-  List.map (\a ->List.map (\b -> { isMine = False, revealed = False, flag = False , x = a, y = b }) (List.range 0 int)) (List.range 0 int)
+generateBoardHelper : Int -> Int -> List (List Case)
+generateBoardHelper w h =
+  List.map (\a ->List.map (\b -> { isMine = False, revealed = False, flag = False , x = a, y = b }) (List.range 0 (w-1))) (List.range 0 (h-1))
 
 helper : (Int, Int) -> List (List Case) -> List (List Case)
 helper ( a, b ) caseList =
@@ -147,10 +156,10 @@ visitHelper ( a, b ) board =
 exampleGenerateRandomMines : Cmd Msg
 exampleGenerateRandomMines =
     Mine.generateRandomMines
-        { width = 19
-        , height = 19
-        , minMines = 70
-        , maxMines = 80
+        { width = boardWidth-1
+        , height = boardHeight-1
+        , minMines = numberBombs
+        , maxMines = numberBombs
         , initialX = 0
         , initialY = 0
         }
@@ -179,14 +188,12 @@ countScore board model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( {board = [[]], height = 20, width = 20, mines = [], state = "Game in progress", score = 0}, exampleGenerateRandomMines )
+    ( {board = [[]], height = boardHeight, width = boardWidth, mines = [], state = "Game in progress", score = 0}, exampleGenerateRandomMines )
 
 type Msg
     = MinesGenerated (List ( Int, Int ))
     |Reveal Case
     |Flag Case
-    |Loose
-    |Win
     |Reset
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -199,12 +206,14 @@ update msg model =
         in
           if case_.isMine then ( {model | board = newBoard, state = "You loose"}, Cmd.none)
           else
-            ( {model | board = newBoard, score = countScore newBoard model}, Cmd.none)
+            let
+              newScore = countScore newBoard model
+            in
+              if newScore == boardHeight*boardWidth - numberBombs then ( {model | board = newBoard, state ="You win", score = countScore newBoard model}, Cmd.none)
+              else
+                ( {model | board = newBoard, score = countScore newBoard model}, Cmd.none)
       Flag case_ -> ({model | board = flagCase case_ model.board model.state}, Cmd.none)
-
-      Win -> ({model | state = "You win"}, Cmd.none)
-      Loose -> ({model | state = "You loose"}, Cmd.none)
-      Reset -> ( {board = [[]], height = 20, width = 20, mines = [], state = "Game in progress", score = 0}, exampleGenerateRandomMines )
+      Reset -> ( {board = [[]], height = boardHeight, width = boardWidth, mines = [], state = "Game in progress", score = 0}, exampleGenerateRandomMines )
 
 
 view : Model -> Html Msg

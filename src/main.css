@@ -42,7 +42,7 @@ button {
   display: grid;
   align-items: center;
   justify-content: center;
-  grid-template-columns: repeat(20,17px);
+  grid-template-columns: repeat(16,17px);
   grid-auto-rows: auto;
   margin-top: 15px;
 }

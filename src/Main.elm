@@ -7,6 +7,7 @@ import Mine
 import Html.Events as Events
 import List.Extra
 
+-- Dimension de notre board et nombre de bombes
 boardWidth : Int
 boardWidth = 16
 
@@ -25,10 +26,11 @@ type alias Model =
     , height : Int
     , width : Int
     , mines : List Mine.Mine
-    , state : String
-    , score : Int
+    , state : String --Correspond à à l'état victoire, défaite ou en cours de jeu
+    , score : Int --Correspond au nombre de case découvert
     }
 
+--Permet de générer notre notre liste de liste de case qui sera notre board
 generateBoard : List Mine.Mine -> List (List Case)
 generateBoard mineList =
   let
@@ -40,12 +42,14 @@ generateBoardHelper : Int -> Int -> List (List Case)
 generateBoardHelper w h =
   List.map (\a ->List.map (\b -> { isMine = False, revealed = False, flag = False , x = a, y = b }) (List.range 0 (w-1))) (List.range 0 (h-1))
 
+--Ajoute les bombes dans le board
 helper : (Int, Int) -> List (List Case) -> List (List Case)
 helper ( a, b ) caseList =
       case List.Extra.getAt a caseList of
         Nothing -> caseList
         Just (cases) -> List.Extra.setAt a (List.Extra.updateAt b (\x_ -> {isMine = True, revealed = False, flag = False, x = a, y = b}) cases) caseList
 
+--Révéle une case et d'autres cases de maniére recursive si la case à 0 bombe autour
 revealCaseOnClick : Case -> List (List Case) -> String -> List (List Case)
 revealCaseOnClick case_ board state =
   if state == "Game in progress" && case_.flag==False then
@@ -59,6 +63,7 @@ revealCaseOnClick case_ board state =
   else
     board
 
+--Révéle une case
 reveal1Case : Case -> List (List Case) -> List (List Case)
 reveal1Case case_ board =
   if case_.flag==False then
@@ -71,12 +76,14 @@ reveal1Case case_ board =
   else
     board
 
+--Renvoie la case à la position a,b
 getCase : (Int, Int) ->  List (List Case) -> Maybe Case
 getCase ( a, b ) board =
     case List.Extra.getAt a board of
       Nothing -> Nothing
       Just (cases) -> List.Extra.getAt b cases
 
+--Renvoie toute les cases autours de case_, la liste de case pris en paramétre est là pour évité les doublon
 getCaseAround : Case -> List Case -> List (List Case) -> List Case
 getCaseAround case_ cases board=
     let
@@ -98,7 +105,7 @@ getCaseAround case_ cases board=
             Nothing -> acc
             Just (c) -> if (List.member c cases)== False && c.revealed == False then c::acc else acc) [] visits
 
-
+--Renvoie le board avec toutes les cases qui doivent être révélés
 revealHelperRecursive : List Case -> List (List Case) -> List (List Case)
 revealHelperRecursive listCase board =
   case listCase of
@@ -114,6 +121,7 @@ revealHelperRecursive listCase board =
           in
             revealHelperRecursive newList newBoard
 
+--Met un flag sur une case mais elle n'est pas utilisé car la fonction onDoubleClick ne fonctionne pas trés bien
 flagCase : Case -> List (List Case) ->  String -> List (List Case)
 flagCase case_ board state =
   if state == "Game in progress" then
@@ -126,6 +134,7 @@ flagCase case_ board state =
     else
       board
 
+--Renvoie le nombre de bombe autour de case_
 bombsAround : Case -> List (List Case) -> Int
 bombsAround case_ board =
     let
@@ -168,6 +177,7 @@ exampleGenerateRandomMines =
 viewCase : List (List Case) -> Case -> Html Msg
 viewCase board case_=
   Html.button
+    --la mise en place du flag est désactivé car je n'est pas trouvé le moyen de gérer via autre chose que le double clique et le double ne fonctionne pas bien
     [{-Events.onDoubleClick(Flag case_) ,-}Events.onClick(Reveal case_), style "width" "17px", style "height" "17px", style "background-color" "light-grey"]
     [ if case_.flag then text "🚩"
       else
@@ -179,6 +189,7 @@ viewCase board case_=
           text ""
     ]
 
+--Renvoie le score qui correspond au nombre de case révélés
 countScore : List (List Case) -> Model -> Int
 countScore board model =
   if model.state == "Game in progress" then
@@ -204,12 +215,12 @@ update msg model =
         let
           newBoard =  revealCaseOnClick case_ model.board model.state
         in
-          if case_.isMine then ( {model | board = newBoard, state = "You loose"}, Cmd.none)
+          if case_.isMine then ( {model | board = newBoard, state = "You loose"}, Cmd.none) --On perd quand on révéle une bombe
           else
             let
               newScore = countScore newBoard model
             in
-              if newScore == boardHeight*boardWidth - numberBombs then ( {model | board = newBoard, state ="You win", score = countScore newBoard model}, Cmd.none)
+              if newScore == boardHeight*boardWidth - numberBombs then ( {model | board = newBoard, state ="You win", score = countScore newBoard model}, Cmd.none) --on gagne si on réussi à révélé toutes les cases qui ne sont pas des bombes
               else
                 ( {model | board = newBoard, score = countScore newBoard model}, Cmd.none)
       Flag case_ -> ({model | board = flagCase case_ model.board model.state}, Cmd.none)

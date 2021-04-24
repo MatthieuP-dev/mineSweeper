@@ -121,7 +121,7 @@ revealHelperRecursive listCase board =
           in
             revealHelperRecursive newList newBoard
 
---Met un flag sur une case mais elle n'est pas utilisé car la fonction onDoubleClick ne fonctionne pas trés bien
+--Met un flag sur la case
 flagCase : Case -> List (List Case) ->  String -> List (List Case)
 flagCase case_ board state =
   if state == "Game in progress" then

@@ -6,7 +6,7 @@ import Html.Attributes exposing (src,style,class)
 import Mine
 import Html.Events as Events
 import List.Extra
-
+import Html.Events.Extra.Mouse as Mouse
 -- Dimension de notre board et nombre de bombes
 boardWidth : Int
 boardWidth = 16
@@ -27,7 +27,7 @@ type alias Model =
     , width : Int
     , mines : List Mine.Mine
     , state : String --Correspond à à l'état victoire, défaite ou en cours de jeu
-    , score : Int --Correspond au nombre de case découvert
+    , nbFlag : Int --Correspond au nombre de drapeau
     }
 
 --Permet de générer notre notre liste de liste de case qui sera notre board
@@ -134,6 +134,19 @@ flagCase case_ board state =
     else
       board
 
+--Enleve le flag sur une case qui a déjà un flag
+unFlagCase : Case -> List (List Case) ->  String -> List (List Case)
+unFlagCase case_ board state =
+  if state == "Game in progress" then
+    let
+      (a, b) = (case_.x , case_.y)
+    in
+     case List.Extra.getAt a board of
+      Nothing -> board
+      Just (cases) -> List.Extra.setAt a (List.Extra.updateAt b (\x_ -> {isMine = case_.isMine, revealed = False, flag = False, x = a, y = b}) cases) board
+    else
+      board
+
 --Renvoie le nombre de bombe autour de case_
 bombsAround : Case -> List (List Case) -> Int
 bombsAround case_ board =
@@ -177,8 +190,7 @@ exampleGenerateRandomMines =
 viewCase : List (List Case) -> Case -> Html Msg
 viewCase board case_=
   Html.button
-    --la mise en place du flag est désactivé car je n'est pas trouvé le moyen de gérer via autre chose que le double clique et le double ne fonctionne pas bien
-    [{-Events.onDoubleClick(Flag case_) ,-}Events.onClick(Reveal case_), style "width" "17px", style "height" "17px", style "background-color" "light-grey"]
+    [Mouse.onContextMenu(\events -> Flag case_) ,Events.onClick(Reveal case_), style "width" "17px", style "height" "17px", style "background-color" "light-grey"]
     [ if case_.flag then text "🚩"
       else
         if case_.revealed then
@@ -195,11 +207,21 @@ countScore board model =
   if model.state == "Game in progress" then
     List.foldl (\x a -> List.foldl (\c y -> if c.revealed then y+1 else y ) a x) 0 board
   else
-    model.score
+    model.nbFlag
+
+--Vérifie si les flag sont mis sur toutes les bombes
+checkFlag : List (List Case) -> Bool
+checkFlag board =
+  List.foldl (\list acc ->
+    List.foldl (\case_ bool->
+      if case_.flag&&case_.isMine==False then False&&bool
+      else
+        True&&bool) acc list) True board
+
 
 init : ( Model, Cmd Msg )
 init =
-    ( {board = [[]], height = boardHeight, width = boardWidth, mines = [], state = "Game in progress", score = 0}, exampleGenerateRandomMines )
+    ( {board = [[]], height = boardHeight, width = boardWidth, mines = [], state = "Game in progress", nbFlag = numberBombs}, exampleGenerateRandomMines )
 
 type Msg
     = MinesGenerated (List ( Int, Int ))
@@ -218,13 +240,25 @@ update msg model =
           if case_.isMine then ( {model | board = newBoard, state = "You loose"}, Cmd.none) --On perd quand on révéle une bombe
           else
             let
-              newScore = countScore newBoard model
+              score = countScore newBoard model
             in
-              if newScore == boardHeight*boardWidth - numberBombs then ( {model | board = newBoard, state ="You win", score = countScore newBoard model}, Cmd.none) --on gagne si on réussi à révélé toutes les cases qui ne sont pas des bombes
+              if score == boardHeight*boardWidth - numberBombs then ( {model | board = newBoard, state ="You win" }, Cmd.none) --on gagne si on réussi à révélé toutes les cases qui ne sont pas des bombes
               else
-                ( {model | board = newBoard, score = countScore newBoard model}, Cmd.none)
-      Flag case_ -> ({model | board = flagCase case_ model.board model.state}, Cmd.none)
-      Reset -> ( {board = [[]], height = boardHeight, width = boardWidth, mines = [], state = "Game in progress", score = 0}, exampleGenerateRandomMines )
+                ( {model | board = newBoard}, Cmd.none)
+      Flag case_ ->
+        if case_.flag==False then
+          let
+            newBoard = flagCase case_ model.board model.state
+          in
+            if model.nbFlag-1 < 1 && checkFlag newBoard then ({model | board = newBoard, nbFlag = model.nbFlag - 1, state = "You win"}, Cmd.none)
+            else
+              ({model | board = newBoard, nbFlag = model.nbFlag - 1}, Cmd.none)
+        else
+          let
+            newBoard = unFlagCase case_ model.board model.state
+          in
+           ({model | board = newBoard, nbFlag = model.nbFlag+1}, Cmd.none)
+      Reset -> ( {board = [[]], height = boardHeight, width = boardWidth, mines = [], state = "Game in progress", nbFlag = numberBombs}, exampleGenerateRandomMines )
 
 
 view : Model -> Html Msg
@@ -233,7 +267,7 @@ view model =
         ([ h1 [] [ text "Démineur" ]
         , text "Play !"
         ,div [class "myButton"] [Html.button [Events.onClick Reset] [text "Reset"]]
-        ,div [class "myButton"] [text (String.fromInt model.score)]
+        ,div [class "myButton"] [text (String.fromInt model.nbFlag)]
         ,div [class "myButton"] [text (model.state)]
         , div [class "myGrid"]
           (let board = model.board in (List.foldl (\x a -> (List.map (viewCase board) x) ++ a) [] model.board))
